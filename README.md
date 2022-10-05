@@ -1,161 +1,124 @@
-# FeatureCloud App Blank Template
+# FeatureCloud K-anonimity App 
 
-The app-blank template contains an initial state that does not execute commands other than transitioning to the terminal state.
-This template is a starting point for implementing apps by adding more states and operations.
- 
+## Description
+The FeatureCloud K-anonimity App provides the capibility for anonymizing sensitive data using K-anonimity and other approches (e.g. l-diversity, t-closeness). The app integrates the Java API provided by the [ARX – Data Anonymization Tool](https://arx.deidentifier.org/development/api/) with Python and let the users assign generalization hierarchies through CSV files to perform data transformation methods. 
 
-For registering and testing your apps or using other apps, please visit
-[FeatureCloud.ai](https://featurecloud.ai/). And for more information about FeatureCloud architecture,
-please refer to 
-[The FeatureCloud AI Store for Federated Learning in Biomedicine and Beyond](https://arxiv.org/abs/2105.05734) [[1]](#1).
+## Input 
+- data.csv - containing the original dataset (columns: features; rows: samples)
+- hierarchies_folder - folder containing the csv files corresponding to the generalization hierarchies of each attribute that is a quasi-identifier.
 
+## Output
+- anom_data.csv - containing the anonymized dataset generated with the given privacy models and hierarchies.
 
-## Developing Apps using FeatureCloud library
-FeatureCloud library facilitates app development inside the FeatureCloud platform. To develop apps, developers
-should define their states and register them to the default app.
+## Workflow
+Can be combined with the following apps:
+- Post: 
+  - Preprocessing apps (e.g. Cross-validation, Normalization ...) 
+  - Various analysis apps (e.g. Logistic Regression, Linear Regression ...)
 
-### defining new states
-For defining new states, in general, developers can use [`AppState`](engine/README.md#appstate-defining-custom-states)
-which supports further communications, transitions, logging, and operations.
+## Config  
+Use the config file to set the parameters for the anonyimization. Upload it together with your data that will be anonymized. 
 
-#### AppState
-[`AppState`](engine/README.md#appstate-defining-custom-states) is the building block of FeatureCloud apps that covers
-all the scenarios with the verifying mechanism. Each state of 
-the app should extend [`AppState`](engine/README.md#appstate-defining-custom-states), which is an abstract class with two specific abstract methods:
-- [`register`](engine/README.md#registering-a-specific-transition-for-state-register_transition):
-should be implemented by apps to register possible transitions between the current state to other states.
-This method is part of verifying mechanism in FeatureCloud apps that ensures logically eligible roles can participate in the current state
-and transition to other ones.
-- [`run`](engine/README.md#executing-states-computation-run): executes all operations and calls for communication between FeatureCloud clients.
-`run` is another part of the verification mechanism in the FeatureCloud library that ensures the transitions to other states are logically correct
-by returning the name of the next state.
-
-
-### Registering apps
-For each state, developers should extend one of the abstract states and call the helper function to register automatically
-the state in the default FeatureCloud app:
-
-```angular2html
-@app_state(name='initial', role=Role.BOTH, app_name='example')
-class ExampleState(AppState):
-    def register(self):
-        self.register_transition('terminal', Role.BOTH)
-
-    def run(self):
-        self.read_config()
-        self.app.log(self.config)
-        return 'terminal'
+```
+fc_anonymization:
+  local_dataset:
+    data: data.csv
+    sep: ;
+    hierarchies_folder: Hierarchies
+  arx:
+    attributes:
+      age: 
+        data_type: INTEGER #Optional                             
+        attribute_type: QUASI_IDENTIFYING              
+        hierarchy_file: data_age_hierarchy.csv
+      zipcode: 
+        data_type: DECIMAL #Optional
+        attribute_type: QUASI_IDENTIFYING
+        hierarchy_file: data_zipcode_hierarchy.csv
+      disease: 
+        data_type: STRING #Optional
+        attribute_type: QUASI_IDENTIFYING
+        hierarchy_file: data_disease_hierarchy.csv
+      salary:
+        data_type: INTEGER #Optional 
+        attribute_type: SENSITIVE
+        privacy_model: OrderedDistanceTCloseness
+    models: 
+      KAnonymity:
+        k: 2
+      OrderedDistanceTCloseness:
+        t: 0.375
+    config: 
+      SuppressionLimit: 0
+  result:
+    file: anom_data.csv
 ```
 
-### building the app docker image
-Once app implementation is done, building the docker image for testing or adding it to
-[FeatureCloud AI store](https://featurecloud.ai/ai-store?view=store&q=&r=0),
-developers should provide the following files.
-#### Dockerization files
+### Config File Options 
 
-For dockerizing apps, regardless of their applications, there should be some specific files:
+#### Local dataset
+The input data should include a CSV file containing the dataset to be anonymized and a folder containing the generalization hierarchy for each quasi-identifier as a CSV file. The user should specify a unique delimiter for all CSV files. 
 
-1. [Dockerfile](Dockerfile)
-2. [build.sh](build.sh)
-3. [server-config](server_config)
-   - [docker-entrypoint.sh](server_config/docker-entrypoint.sh)
-   - [nginx](server_config/nginx)
-   - [supervisord.conf](server_config/supervisord.conf)
+#### ARX - Attributes
+For each attribute in the input dataset, the user can define the following parameters: 
+- `data_type`: indicates the data type of the attribute. The possible data types are: DATE, DECIMAL, INTEGER, ORDERED_STRING and STRING. If not 
+given the data type is inferred by the program.
+- `attribute_type`: indicates the type of an attribute. The possible values include: IDENTIFYING, QUASI_IDENTIFYING, SENSITIVE AND INSENSITIVE. The default value if not given for an attribute is IDENTIFYING.
 
-Developers should ensure that these files with the same structure and content exist in the same directory as their app
-implementation. 
+The IDENTIFYING attributes are attributes that contain personal identifiers (e.g. name, address, date of birth). These attributes are removed from the dataset. 
 
+The QUASI_IDENTIFYING attributes are attributes that link with further information can be used for the reidentification of an individual. For these attributes, the user can imposed constraints by generalizing attribute values based on hierarchies. For setting a hierarchy to an attribute, the user should include the following parameter:
+- `hierachy_file`: indicates the name of the CSV file in the hierarchies folder provided in the local dataset configuration.
 
-#### App-specific files
-All app-specific files should include data or codes strictly dependent on the app's functionality.
+The SENSITIVE attributes are attributes that contain confidential information about an individual. For protecting these attributes, ARX provides some privacy models such as t-closeness or l-diversity, which the user can specified using the following parameter:
+- `privacy_model`: indicates the name of the privacy model used for a sensitive attribute. The models names can be found in the [ARX package](https://arx.deidentifier.org/wp-content/uploads/javadoc/current/api/index.html) under the criteria class and the ones supported are listed under the Privacy Models section.
 
-##### main.py
-Each app should be implemented in a directory that includes the [`main.py`](main.py) file, which in turn comprises either direct
-implementation of states or importing them. Moreover, `main` should import `bottle` and `api` packages:
-```angular2html
-from bottle import Bottle
+The INSENSITIVE attributes are attributes that can be kept unmodified.
 
-from api.http_ctrl import api_server
-from api.http_web import web_server
+The hierarchies provided in the CSV files can be of four types:
+1. Masking-based hierarchies
+2. Interval-based hierarchies
+3. Order-based hierarchies
+4. Date-based hierarchies
 
-import apps.examples.dice
+For more information on how to create the hierarchies, please refer to the [official documentation of ARX for configuration.](https://arx.deidentifier.org/anonymization-tool/configuration/) In particular, the section Creating generalization hierarchies. 
 
-from engine.app import app
+#### ARX - Privacy Models
+The privacy models should include the name of the model and the corresponding parameters. 
 
-server = Bottle()
+For the quasi-identifying attributes, the privacy model used is "K-Anonimity" and the required parameter is "k". For the user to use this model, the config file should include the following under the section models:
 ```
-Here we imported `dice` app from our [`apps`](apps/README.md) package, which because of putting 
-[`app_state`](engine/README.md#registering-states-to-the-app-app_state) on top of state classes, 
-merely importing the states and registering them into the [`app` instance](engine/README.md#app-instance).     
-
-For running the app, inside a docker container, [`app.register()`](engine/README.md#registering-all-transitions-appregister)
-should be called to register and verify all transitions; next, api and servers should mount at corresponding paths; and finally
-the server is ready to run the app.
-
-```angular2html
-    app.register()
-    server.mount('/api', api_server)
-    server.mount('/web', web_server)
-    server.run(host='localhost', port=5000)
+    KAnonymity:
+        k: 2
 ```
 
-All of the codes above, except for importing the app or, alternatively, implementing states, can be exactly same for all apps.  
+Furthermore, for sensitive attributes the privacy models that can be used are the following: 
+   - BasicBLikeness
+   - DDisclosurePrivacy
+   - DistinctLDiversity
+   - EntropyLDiversity
+   - EqualDistanceTCloseness
+   - HierarchicalDistanceTCloseness
+   - LDiversity
+   - OrderedDistanceTCloseness
+   - RecursiveCLDiversity
+   - TCloseness
 
-##### requirements.txt
-for installing required python libraries inside the docker image, developers should provide a list of libraries in [requirements.txt](requirements.txt).
-Some requirements are necessary for the FeatureCloud library, which should always be listed, are:
-```angular2html
-bottle
-jsonpickle
-joblib
-numpy
-bios
-pydot
-pyyaml
+When an user has specified the privacy model required for a sensitive attribute, under section models should also include the name of this model and its parameters. For instance, the "salary" attribute in the config file has the privacy model "OrderedDistanceTCloseness". Therefore, the config file should include under the section models:
+```
+    OrderedDistanceTCloseness:
+        t: 0.375
 ```
 
-And the rest should be all other app-required libraries.
+For more information of the parameters for each model, please refer to the [ARX package](https://arx.deidentifier.org/wp-content/uploads/javadoc/current/api/index.html) under the criteria class.
 
-##### config.yml
-Each app may need some hyper-parameters or arguments that the end-users should provide. Such data should be included
-in [`config.yml`](apps/README.md#config-file), which should be read and interpreted by the app. 
+#### ARX - Config
+ARX also provides further configuration possibilites. This app lets the user set a supression limit in the configuration as follows:
 
-### Run YOUR_APPLICATION
-
-#### Prerequisite
-
-To run YOUR_APPLICATION, you should install Docker and FeatureCloud pip package:
-
-```shell
-pip install featurecloud
 ```
+    config: 
+        SuppressionLimit: 0
+```        
 
-Then either download YOUR_APPLICATION image from the FeatureCloud docker repository:
-
-```shell
-featurecloud app download featurecloud.ai/YOUR_APPLICATION
-```
-
-Or build the app locally:
-
-```shell
-featurecloud app build featurecloud.ai/YOUR_APPLICATION
-```
-
-Please provide example data so others can run YOUR_APPLICATION with the desired settings in the `config.yml` file.
-
-#### Run YOUR_APPLICATION in the test-bed
-
-You can run YOUR_APPLICATION as a standalone app in the [FeatureCloud test-bed](https://featurecloud.ai/development/test) or [FeatureCloud Workflow](https://featurecloud.ai/projects). You can also run the app using CLI:
-
-```shell
-featurecloud test start --app-image featurecloud.ai/YOUR_APPLICATION --client-dirs './sample/c1,./sample/c2' --generic-dir './sample/generic'
-```
-
-
-
-### References
-<a id="1">[1]</a> 
-Matschinske, J., Späth, J., Nasirigerdeh, R., Torkzadehmahani, R., Hartebrodt, A., Orbán, B., Fejér, S., Zolotareva,
-O., Bakhtiari, M., Bihari, B. and Bloice, M., 2021.
-The FeatureCloud AI Store for Federated Learning in Biomedicine and Beyond. arXiv preprint arXiv:2105.05734.
+#### Result 
+The output data should include a CSV file containing the anonymized data.
