@@ -1,11 +1,11 @@
 # FeatureCloud K-anonimity App 
 
 ## Description
-The FeatureCloud K-anonimity App provides the capibility for anonymizing sensitive data using K-anonimity and other approches (e.g. l-diversity, t-closeness). The app integrates the Java API provided by the [ARX – Data Anonymization Tool](https://arx.deidentifier.org/development/api/) with Python and let the users assign generalization hierarchies through CSV files to perform data transformation methods. 
+The FeatureCloud K-anonimity App provides the capability for anonymizing sensitive data using K-anonimity and other approches (e.g. l-diversity, t-closeness). The app integrates the Java API provided by the [ARX – Data Anonymization Tool](https://arx.deidentifier.org/development/api/) with Python and lets the user assign hierarchies through CSV files to perform data transformation methods. 
 
 ## Input 
 - data.csv - containing the original dataset (columns: features; rows: samples)
-- hierarchies_folder - folder containing the csv files corresponding to the generalization hierarchies of each attribute that is a quasi-identifier.
+- hierarchies_folder - folder containing the csv files corresponding to the hierarchies of quasi-identifying attributes.
 
 ## Output
 - anom_data.csv - containing the anonymized dataset generated with the given privacy models and hierarchies.
@@ -17,7 +17,7 @@ Can be combined with the following apps:
   - Various analysis apps (e.g. Logistic Regression, Linear Regression ...)
 
 ## Config  
-Use the config file to set the parameters for the anonyimization. Upload it together with your data that will be anonymized. 
+Use the config file to set the parameters for the anonymization. Upload it together with your data that will be anonymized. 
 
 ```
 fc_anonymization:
@@ -57,7 +57,7 @@ fc_anonymization:
 ### Config File Options 
 
 #### Local dataset
-The input data should include a CSV file containing the dataset to be anonymized and a folder containing the generalization hierarchy for each quasi-identifier as a CSV file. The user should specify a unique delimiter for all CSV files. 
+The input data should include a CSV file containing the dataset to be anonymized and a folder containing the hierarchy for each quasi-identifier as a CSV file. The user should specify a unique delimiter for all CSV files. 
 
 #### ARX - Attributes
 For each attribute in the input dataset, the user can define the following parameters: 
@@ -86,7 +86,7 @@ For more information on how to create the hierarchies, please refer to the [offi
 #### ARX - Privacy Models
 The privacy models should include the name of the model and the corresponding parameters. 
 
-For the quasi-identifying attributes, the privacy model used is "K-Anonimity" and the required parameter is "k". For the user to use this model, the config file should include the following under the section models:
+For the quasi-identifying attributes, the privacy model used is "K-KAnonymity" and the required parameter is "k". For the user to use this model, the config file should include the following under the section models:
 ```
     KAnonymity:
         k: 2
@@ -104,7 +104,7 @@ Furthermore, for sensitive attributes the privacy models that can be used are th
    - RecursiveCLDiversity
    - TCloseness
 
-When an user has specified the privacy model required for a sensitive attribute, under section models should also include the name of this model and its parameters. For instance, the "salary" attribute in the config file has the privacy model "OrderedDistanceTCloseness". Therefore, the config file should include under the section models:
+If an user has specified the privacy model required for a sensitive attribute, the section models should also include the name of this model and its parameters. For instance, the "salary" attribute in the config file has the privacy model "OrderedDistanceTCloseness". Therefore, the config file should include under the section models:
 ```
     OrderedDistanceTCloseness:
         t: 0.375
