@@ -1,0 +1,32 @@
+fc_anonymization:
+  local_dataset:
+    data: data.csv
+    sep: ;
+    hierarchies_folder: Hierarchies
+  arx:
+    attributes:
+      age: 
+        data_type: INTEGER                             
+        attribute_type: QUASI_IDENTIFYING              
+        hierarchy_file: data_age_hierarchy.csv
+      zipcode: 
+        data_type: DECIMAL
+        attribute_type: QUASI_IDENTIFYING 
+        hierarchy_file: data_zipcode_hierarchy.csv
+      disease: 
+        data_type: STRING
+        attribute_type: QUASI_IDENTIFYING
+        hierarchy_file: data_disease_hierarchy.csv
+      salary:
+        data_type: INTEGER 
+        attribute_type: SENSITIVE
+        privacy_model: OrderedDistanceTCloseness
+    models: 
+      KAnonymity:
+        k: 2
+      OrderedDistanceTCloseness:
+        t: 0.6
+    config: 
+      SuppressionLimit: 0
+  result:
+    file: anom_data.csv
