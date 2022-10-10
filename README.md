@@ -1,7 +1,7 @@
 # FeatureCloud K-anonymity App 
 
 ## Description
-The FeatureCloud K-anonimity App provides the capability for anonymizing sensitive data using K-anonymity and other approches (e.g. l-diversity, t-closeness). The app integrates the Java API provided by the [ARX – Data Anonymization Tool](https://arx.deidentifier.org/development/api/) with Python and lets the user assign hierarchies through CSV files to perform data transformation methods. 
+The FeatureCloud K-anonymity App provides the capability for anonymizing sensitive data using K-anonymity and other approches (e.g. l-diversity, t-closeness). The app integrates the Java API provided by the [ARX – Data Anonymization Tool](https://arx.deidentifier.org/development/api/) with Python and lets the user assign hierarchies through CSV files to perform data transformation methods. 
 
 ## Input 
 - data.csv - containing the original dataset (columns: features; rows: samples)
